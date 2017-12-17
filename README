@@ -1,0 +1,135 @@
+ELinks - Full-Featured Text WWW Browse
+
+This is a fork of elinks, the text mode web browser.
+
+It was cloned from their git repo by me on 31st Dec 2013. Their website is still
+up but it appears that their git no longer works, and none of the support/bug report
+links seem to work.
+
+This is patched to fix the following issues:
+
+• Bug where elinks wouldn't follow gopher html links.
+• Bug in gopher type 7 index queries.
+• Bug in gopher remote directory links.
+
+Below is a list of all the support gopher entities that elinks supports:
+(Taken from gopher.c)
+
+    GOPHER_UNKNOWN      =  0 , /* Special fall-back entity */
+    GOPHER_FILE         = '0',
+    GOPHER_DIRECTORY    = '1',
+    GOPHER_CSO          = '2',
+    GOPHER_ERROR        = '3',
+    GOPHER_MACBINHEX    = '4',
+    GOPHER_PCBINARY     = '5',
+    GOPHER_UUENCODED    = '6',
+    GOPHER_INDEX        = '7',
+    GOPHER_TELNET       = '8',
+    GOPHER_BINARY       = '9',
+    GOPHER_GIF          = 'g',
+    GOPHER_HTML         = 'h', /* HTML */
+    GOPHER_CHTML        = 'H', /* HTML */
+    GOPHER_MIME         = 'm',
+    GOPHER_SOUND        = 's',
+    GOPHER_WWW          = 'w', /* W3 address */
+    GOPHER_IMAGE        = 'I',
+    GOPHER_TN3270       = 'T',
+    GOPHER_INFO         = 'i', /* Information or separator line */
+    GOPHER_DUPLICATE    = '+',
+    GOPHER_PLUS_IMAGE   = ':', /* Addition from Gopher Plus */
+    GOPHER_PLUS_MOVIE   = ';',
+    GOPHER_PLUS_SOUND   = '<',
+    GOPHER_PLUS_PDF     = 'P',
+
+There are a huge number of configure options. Do ./configure --help to see a
+full list. As far as I can tell they all work apart from --enable-debug.
+
+List of optional features:
+
+  --with-guile
+  --enable-cgi
+  --enable-finger
+  --enable-fsp
+  --enable-gopher
+  --enable-nntp
+  --enable-smb
+  --enable-88-colors
+  --enable-256-colors
+  --enable-true-color
+  --enable-exmode
+  --enable-html-highlight
+  --enable-bittorrent
+  --enable-fastmem
+  --disable-mouse
+  --without-gpm
+
+Original info:
+
+ELinks - an advanced web browser
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ELinks is an advanced and well-established feature-rich text mode web
+(HTTP/FTP/..) browser. ELinks can render both frames and tables, is highly
+customizable and can be extended via scripts. It is very portable and runs
+on a variety of platforms.
+
+The ELinks official website is available at
+
+	http://elinks.cz/
+
+Please see the SITES file for mirrors or other recommended sites.  If you
+want to install ELinks on your computer, see the INSTALL file for further
+instructions.
+
+A good starting point is documentation files available in doc/, especially the
+file index.txt.
+
+If you want to request features or report bugs, see community information at
+http://elinks.cz/community.html and feedback information available at
+http://elinks.cz/feedback.html.
+
+If you want to write some patches, please first read the doc/hacking.txt
+document.
+
+If you want to add a new language or update the translation for an existing
+one, please read po/README document.
+
+If you want to write some documentation, well, you're welcome! ;)
+
+
+
+Historical notes
+~~~~~~~~~~~~~~~~
+
+Initially, ELinks was a development version of Links (Lynx-like text WWW
+browser), with more liberal features policy and development style.  Its purpose
+was to provide an alternative to Links, and to test and tune various new
+features, but still provide good rock-solid releases inside stable branches.
+
+Why not contribute to Links instead?  Well, first I made a bunch of patches for
+the original Links, but Mikulas wasn't around to integrate them, so I started
+releasing my fork. When he came back, a significant number of them got refused
+because Mikulas did not like them as he just wouldn't have any use for them
+himself.  He aims to keep Links at a relatively closed feature set and merge
+only new features which he himself needs.  It has the advantage that the tree is
+very narrow and the code is small and contains very little bloat.
+
+ELinks, on the contrary, aims to provide a full-featured web browser, superior
+to both lynx and w3m and with the power (but not slowness and memory usage) of
+Mozilla, Konqueror and similar browsers. However, to prevent drastic bloating
+of the code, the development is driven in the course of modularization and
+separation of add-on modules (like cookies, bookmarks, ssl, scripting etc).
+
+For more details about ELinks history, please see
+
+	http://elinks.cz/history.html
+
+If you are more interested in the history and various Links clones and versions,
+you can examine the website at
+
+	http://links.sf.net/
+
+
+
+
+vim: textwidth=80
