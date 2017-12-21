@@ -88,6 +88,7 @@ static const struct s_msg_dsc msg_dsc[] = {
 
 #ifdef CONFIG_SSL
 	{S_SSL_ERROR,		N_("SSL error")},
+	{S_SSL_CERTFAIL,		N_("SSL Host Verification Failed.")},
 #else
 	{S_SSL_ERROR,		N_("This version of ELinks does not contain SSL/TLS support")},
 #endif

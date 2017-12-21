@@ -1132,6 +1132,9 @@ else
 fi
 
 AC_MSG_RESULT($cf_result)
+if test "$cf_result" = yes; then
+	AC_CHECK_FUNCS(X509_VERIFY_PARAM_set1_host)
+fi
 
 # ---- GNU TLS
 

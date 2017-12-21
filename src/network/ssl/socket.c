@@ -7,6 +7,9 @@
 #ifdef CONFIG_OPENSSL
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
+#ifdef HAVE_X509_VERIFY_PARAM_SET1_HOST
+#include <openssl/x509_vfy.h>
+#endif
 #define USE_OPENSSL
 #elif defined(CONFIG_NSS_COMPAT_OSSL)
 #include <nss_compat_ossl/nss_compat_ossl.h>
@@ -167,6 +170,30 @@ verify_certificates(struct socket *socket)
 #endif	/* CONFIG_GNUTLS */
 
 #ifdef USE_OPENSSL
+
+#ifdef HAVE_X509_VERIFY_PARAM_SET1_HOST
+/* activate the OpenSSL-provided host name check */
+static int
+ossl_set_hostname(void *ssl, unsigned char *server_name)
+{
+	int ret = -1;
+
+	X509_VERIFY_PARAM *vpm = X509_VERIFY_PARAM_new();
+	if (vpm) {
+		if (X509_VERIFY_PARAM_set1_host(vpm, (char *) server_name, 0)
+				&& SSL_set1_param(ssl, vpm))
+		{
+			/* successfully activated the OpenSSL host name check */
+			ret = 0;
+		}
+
+		X509_VERIFY_PARAM_free(vpm);
+	}
+
+	return ret;
+}
+
+#else /* HAVE_X509_VERIFY_PARAM_SET1_HOST */
 
 /** Checks whether the host component of a URI matches a host name in
  * the server certificate.
@@ -360,6 +387,7 @@ verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 	mem_free(host_in_uri);
 	return matched;
 }
+#endif	/* HAVE_X509_VERIFY_PARAM_SET1_HOST */
 
 #endif	/* USE_OPENSSL */
 
@@ -389,7 +417,10 @@ ssl_want_read(struct socket *socket)
 
 		default:
 			socket->no_tls = !socket->no_tls;
-			socket->ops->retry(socket, connection_state(S_SSL_ERROR));
+			if (SSL_VERIFY_FAIL_IF_NO_PEER_CERT != NULL)
+				socket->ops->retry(socket, connection_state(S_SSL_CERTFAIL));
+			else
+				socket->ops->retry(socket, connection_state(S_SSL_ERROR));
 	}
 }
 
@@ -400,6 +431,9 @@ ssl_connect(struct socket *socket)
 	int ret;
 	unsigned char *server_name;
 	struct connection *conn = socket->conn;
+#ifdef USE_OPENSSL
+	int (*verify_callback_ptr)(int, X509_STORE_CTX *);
+#endif	/* USE_OPENSSL */
 
 	/* TODO: Recode server_name to UTF-8.  */
 	server_name = get_uri_string(conn->proxied_uri, URI_HOST);
@@ -418,6 +452,23 @@ ssl_connect(struct socket *socket)
 		return -1;
 	}
 
+#ifdef USE_OPENSSL
+#ifdef HAVE_X509_VERIFY_PARAM_SET1_HOST
+	/* activate the OpenSSL-provided host name check */
+	if (ossl_set_hostname(socket->ssl, server_name)) {
+		mem_free_if(server_name);
+		socket->ops->done(socket, connection_state(S_SSL_ERROR));
+		return -1;
+	}
+
+	/* verify_callback() is not needed with X509_VERIFY_PARAM_set1_host() */
+	verify_callback_ptr = NULL;
+#else
+	/* use our own callback implementing the host name check */
+	verify_callback_ptr = verify_callback;
+#endif
+#endif	/* USE_OPENSSL */
+
 	mem_free_if(server_name);
 
 	if (socket->no_tls)
@@ -429,7 +480,7 @@ ssl_connect(struct socket *socket)
 	if (get_opt_bool("connection.ssl.cert_verify", NULL))
 		SSL_set_verify(socket->ssl, SSL_VERIFY_PEER
 					  | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-			       verify_callback);
+			       verify_callback_ptr);
 
 	if (get_opt_bool("connection.ssl.client_cert.enable", NULL)) {
 		unsigned char *client_cert;

@@ -67,6 +67,7 @@ enum connection_basic_state {
 	S_ENCODE_ERROR		= -100017,
 	S_SSL_ERROR		= -100018,
 	S_NO_FORCED_DNS		= -100019,
+	S_SSL_CERTFAIL		= -100020,
 
 	S_HTTP_ERROR		= -100100,
 	S_HTTP_204		= -100101,
