@@ -326,7 +326,7 @@ init_gopher_connection_info(struct connection *conn)
 
 	/* Get entity type, and selector string. */
 	/* Pick up gopher_entity */
-	if (selectorlen > 1 && selector[1] == '/') {
+	if (selectorlen > 1) {
 		entity = *selector++;
 		selectorlen--;
 	}
@@ -357,8 +357,7 @@ init_gopher_connection_info(struct connection *conn)
 		selectorlen++;
 	}
 
-	if (entity_info->type == '1')
-	{
+	if (entity_info->type == '1') {
 		if (strstr(selector, DIR) == selector)
 		{
 			*selector++;
@@ -402,9 +401,9 @@ init_gopher_connection_info(struct connection *conn)
 	gopher->entity = entity_info;
 	gopher->commandlen = command.length;
 
-	debug_log("439 gopher->entity: ", 0);
+	debug_log("404 gopher->entity: ", 0);
 	debug_log(gopher->entity, 1);
-	debug_log("437 command.source: ", 0);
+	debug_log("406 command.source: ", 0);
 	debug_log(command.source, 1);
 	memcpy(gopher->command, command.source, command.length);
 	done_string(&command);
@@ -486,6 +485,7 @@ add_gopher_menu_line(struct string *buffer, unsigned char *line)
 	unsigned char *host = NULL;
 	unsigned char *port = NULL;
 	enum gopher_entity entity = *name++;
+	int link = 0;
 
 	if (!entity) {
 		add_char_to_string(buffer, '\n');
@@ -495,6 +495,7 @@ add_gopher_menu_line(struct string *buffer, unsigned char *line)
 	if (*name) {
 		selector = strchr(name, ASCII_TAB);
 		if (selector) {
+			link = 1;
 			/* Terminate name */
 			*selector++ = '\0';
 
@@ -565,7 +566,7 @@ add_gopher_menu_line(struct string *buffer, unsigned char *line)
 	switch (entity) {
 	case GOPHER_WWW:
 		/* Gopher pointer to W3 */
-		if (selector) {
+		if (selector && link == 1) {
 			add_gopher_link(buffer, name, selector);
 			break;
 		}
@@ -617,7 +618,8 @@ add_gopher_menu_line(struct string *buffer, unsigned char *line)
 
 		} else if (address.length > 0
 			   && strlcmp(address.source, address.length - 1,
-				      "gopher://error.host:1/", -1)) {
+				      "gopher://error.host:1/", -1)
+				 && link == 1) {
 			add_gopher_link(buffer, name, address.source);
 
 		} else {
@@ -636,9 +638,16 @@ add_gopher_menu_line(struct string *buffer, unsigned char *line)
 static unsigned char *
 get_gopher_line_end(unsigned char *data, int datalen)
 {
-	for (; datalen > 1; data++, datalen--)
-		if (data[0] == ASCII_CR && data[1] == ASCII_LF)
+	for (; datalen > 1; data++, datalen--) {
+		if(data[0] == ASCII_CR && data[1] == ASCII_LF)
 			return data + 2;
+		else
+			if(data[0] == ASCII_CR)
+				return data + 1;
+			else
+				if(data[0] == ASCII_LF)
+					return data + 1;
+	}
 
 	return NULL;
 }
@@ -788,9 +797,21 @@ read_gopher_response_data(struct socket *socket, struct read_buffer *rb)
 
 	/* Now read the data from the socket */
 	switch (gopher->entity->type) {
+	case GOPHER_INDEX:
+		/* Lines with no carriage returns */
+		if (strchr(rb->data, ASCII_CR) == NULL) {
+			unsigned char *tmp;
+			tmp = malloc(rb->length + 3);
+			memcpy(tmp, "i", 1);
+			memcpy(tmp+1, rb->data, rb->length);
+			tmp[rb->length]= '\r';
+			tmp[rb->length+1]= '\n';
+			rb->length+=3;
+			memcpy(rb->data, tmp, rb->length);
+			free(tmp);
+		}
+
 	case GOPHER_DIRECTORY:
-/* Don't do directory list for cgi output (7)
-	case GOPHER_INDEX: */
 		state = read_gopher_directory_data(conn, rb);
 		break;
 
@@ -802,7 +823,6 @@ read_gopher_response_data(struct socket *socket, struct read_buffer *rb)
 		state = connection_state(S_GOPHER_CSO_ERROR);
 		break;
 
-	case GOPHER_INDEX:
 	case GOPHER_SOUND:
 	case GOPHER_PLUS_SOUND:
 	case GOPHER_PLUS_MOVIE:
