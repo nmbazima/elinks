@@ -658,7 +658,7 @@ check_gopher_last_line(unsigned char *line, unsigned char *end)
 	assert(line < end);
 
 	/* Just to be safe NUL terminate the line */
-	end[-2] = 0;
+	end[-1] = 0;
 
 	return line[0] == '.' && !line[1] ? NULL : line;
 }
